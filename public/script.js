@@ -201,12 +201,37 @@ function toggleDarkMode() {
 }
 
 function uploadZipFile(file) {
+    const chunkSize = 1024 * 1024; // 1MB chunks
+    const fileSize = file.size;
+    let offset = 0;
     const reader = new FileReader();
-    reader.onload = function(e) {
-        const zipBuffer = e.target.result;
-        socket.emit('uploadZip', { userId: currentUserId, zipBuffer: zipBuffer });
+
+    socket.emit('uploadZip', { userId: currentUserId, fileName: file.name });
+
+    const readNextChunk = () => {
+        const slice = file.slice(offset, offset + chunkSize);
+        reader.readAsArrayBuffer(slice);
     };
-    reader.readAsArrayBuffer(file);
+
+    reader.onload = (e) => {
+        if (e.target.error) {
+            console.error('Error reading file:', e.target.error);
+            return;
+        }
+
+        const chunk = new Uint8Array(e.target.result);
+        socket.emit('zipChunk', chunk);
+
+        offset += chunk.length;
+
+        if (offset < fileSize) {
+            readNextChunk();
+        } else {
+            socket.emit('zipEnd');
+        }
+    };
+
+    readNextChunk();
 }
 
 // New functions for handling repository cloning and ZIP file upload
@@ -220,12 +245,12 @@ function handleCloneRepo() {
 function handleZipUpload(event) {
     const file = event.target.files[0];
     if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const zipBuffer = e.target.result;
-            socket.emit('uploadZip', { userId: currentUserId, zipBuffer: zipBuffer });
-        };
-        reader.readAsArrayBuffer(file);
+        if (file.size > 20 * 1024 * 1024) {
+            alert('File size exceeds 20MB limit. Please choose a smaller file.');
+            return;
+        }
+        appendLog('📤 Uploading ZIP file. Please wait...');
+        uploadZipFile(file);
     }
 }
 
@@ -454,6 +479,11 @@ socket.on('userStats', (stats) => {
     activeSessions.innerHTML = `Active Sessions: <span class="font-bold">${stats.active}</span>`;
     bannedUsers.innerHTML = `Banned Users: <span class="font-bold">${stats.banned}</span>`;
     activeUsers.textContent = stats.active;
+});
+
+socket.on('uploadProgress', (progress) => {
+    console.log(`Upload progress: ${progress.toFixed(2)}%`);
+    // You can update a progress bar or display a message here
 });
 
 document.getElementById('logout-btn').addEventListener('click', logout);
