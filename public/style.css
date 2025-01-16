@@ -9,6 +9,9 @@ body {
     background-attachment: fixed;
     background-repeat: no-repeat;
     position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 body::before {
@@ -29,17 +32,27 @@ body.light-mode {
 
 .container {
     max-width: 1200px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+header {
+  background-color: rgba(31, 41, 55, 0.8);
+  backdrop-filter: blur(5px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 #log-display, #file-explorer {
     font-family: 'Courier New', monospace;
-    background-color: #2d3748;
-    border-color: #4a5568;
+    background-color: rgba(45, 55, 72, 0.8);
+    backdrop-filter: blur(5px);
+    border-color: rgba(74, 85, 104, 0.5);
     transition: all 0.3s ease;
 }
 
 #log-display:hover, #file-explorer:hover {
-    box-shadow: 0 0 15px rgba(66, 153, 225, 0.5);
+    box-shadow: 0 0 20px rgba(66, 153, 225, 0.5);
 }
 
 #log-display::-webkit-scrollbar, #file-explorer::-webkit-scrollbar {
@@ -148,20 +161,28 @@ button.bg-purple-600:active {
 }
 
 #file-list li {
-    padding: 5px 0;
+    padding: 0.5rem;
+    border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
 #file-list li:hover {
-    background-color: rgba(66, 153, 225, 0.1);
+    background-color: rgba(66, 153, 225, 0.2);
 }
 
 #file-list .folder {
     font-weight: bold;
 }
+#file-list .folder::before {
+  content: '📁 ';
+}
 
 #file-list .file {
     padding-left: 20px;
+}
+#file-list .file::before {
+  content: '📄 ';
 }
 
 #dark-mode-toggle {
@@ -177,12 +198,14 @@ button.bg-purple-600:active {
 }
 
 #quote-section {
+    background-color: rgba(45, 55, 72, 0.8);
+    backdrop-filter: blur(5px);
     transition: all 0.3s ease;
 }
 
 #quote-section:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 #quote-text::before,
@@ -198,5 +221,114 @@ button.bg-purple-600:active {
 
 #quote-section:hover #quote-author {
     color: #a0aec0;
+}
+
+.login-container {
+    background-color: rgba(31, 41, 55, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+    max-width: 400px;
+    width: 100%;
+    margin: 2rem auto;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-container:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.login-logo {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 1rem;
+    background-color: rgba(74, 85, 104, 0.8);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: white;
+    font-weight: bold;
+    transition: transform 0.3s ease;
+}
+
+.login-logo:hover {
+    transform: scale(1.1) rotate(10deg);
+}
+
+.login-title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #e2e8f0;
+}
+
+.login-form input {
+    transition: border-color 0.3s ease;
+}
+
+.login-form input:focus {
+    border-color: #4299e1;
+}
+
+.login-button {
+    background-color: #4299e1;
+    color: white;
+    transition: background-color 0.3s ease;
+}
+
+.login-button:hover {
+    background-color: #3182ce;
+}
+
+.forgot-password {
+    text-align: right;
+    margin-top: 0.5rem;
+}
+
+.forgot-password a {
+    color: #a0aec0;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.3s ease;
+}
+
+.forgot-password a:hover {
+    color: #e2e8f0;
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 0.875rem;
+    color: #a0aec0;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+#server-status > div {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+#server-status > div:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 

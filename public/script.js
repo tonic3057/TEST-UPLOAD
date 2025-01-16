@@ -29,23 +29,18 @@ const executeActionBtn = document.getElementById('execute-action-btn');
 const spaceUsage = document.getElementById('space-usage');
 const activeUsers = document.getElementById('active-users');
 const fileList = document.getElementById('file-list');
-const darkModeToggle = document.getElementById('dark-mode-toggle');
 const cpuUsage = document.getElementById('cpu-usage');
 const memoryUsage = document.getElementById('memory-usage');
 const diskUsage = document.getElementById('disk-usage');
 const totalUsers = document.getElementById('total-users');
 const activeSessions = document.getElementById('active-sessions');
 const bannedUsers = document.getElementById('banned-users');
-const cloneRepoBtn = document.getElementById('clone-repo-btn');
-const uploadZipBtn = document.getElementById('upload-zip-btn');
-const zipFileInput = document.getElementById('zip-file-input');
 
 let currentUserId = null;
 let isAdmin = false;
 let allUsers = [];
 let currentPage = 1;
 const usersPerPage = 10;
-let userStates = {};
 
 function appendLog(message, target = logDisplay) {
     const logEntry = document.createElement('div');
@@ -130,14 +125,29 @@ function checkPasswordStrength() {
     const password = passwordInput.value;
     passwordRequirements.classList.remove('hidden');
     
-    if (password.length >= 7) {
-        passwordStrength.textContent = 'Password strength: Strong';
-        passwordStrength.className = 'mb-2 text-sm text-green-500';
-        return true;
-    } else {
-        passwordStrength.textContent = 'Password strength: Weak';
-        passwordStrength.className = 'mb-2 text-sm text-red-500';
-        return false;
+    let strength = 0;
+    if (password.length >= 7) strength++;
+    if (password.match(/[a-z]+/)) strength++;
+    if (password.match(/[A-Z]+/)) strength++;
+    if (password.match(/[0-9]+/)) strength++;
+    if (password.match(/[$@#&!]+/)) strength++;
+
+    switch (strength) {
+        case 0:
+        case 1:
+            passwordStrength.textContent = 'Password strength: Weak';
+            passwordStrength.className = 'text-sm text-red-500';
+            return false;
+        case 2:
+        case 3:
+            passwordStrength.textContent = 'Password strength: Moderate';
+            passwordStrength.className = 'text-sm text-yellow-500';
+            return true;
+        case 4:
+        case 5:
+            passwordStrength.textContent = 'Password strength: Strong';
+            passwordStrength.className = 'text-sm text-green-500';
+            return true;
     }
 }
 
@@ -195,75 +205,17 @@ function updateFileList(files) {
     });
 }
 
-function toggleDarkMode() {
-    document.body.classList.toggle('light-mode');
-    localStorage.setItem('darkMode', document.body.classList.contains('light-mode') ? 'light' : 'dark');
-}
-
-function uploadZipFile(file) {
-    const chunkSize = 1024 * 1024; // 1MB chunks
-    const fileSize = file.size;
-    let offset = 0;
-    const reader = new FileReader();
-
-    socket.emit('uploadZip', { userId: currentUserId, fileName: file.name });
-
-    const readNextChunk = () => {
-        const slice = file.slice(offset, offset + chunkSize);
-        reader.readAsArrayBuffer(slice);
-    };
-
-    reader.onload = (e) => {
-        if (e.target.error) {
-            console.error('Error reading file:', e.target.error);
-            return;
-        }
-
-        const chunk = new Uint8Array(e.target.result);
-        socket.emit('zipChunk', chunk);
-
-        offset += chunk.length;
-
-        if (offset < fileSize) {
-            readNextChunk();
-        } else {
-            socket.emit('zipEnd');
-        }
-    };
-
-    readNextChunk();
-}
-
-// New functions for handling repository cloning and ZIP file upload
-function handleCloneRepo() {
-    const repoUrl = prompt("Enter the GitHub repository URL:");
-    if (repoUrl) {
-        socket.emit('command', { userId: currentUserId, message: repoUrl });
-    }
-}
-
-function handleZipUpload(event) {
-    const file = event.target.files[0];
-    if (file) {
-        if (file.size > 20 * 1024 * 1024) {
-            alert('File size exceeds 20MB limit. Please choose a smaller file.');
-            return;
-        }
-        appendLog('📤 Uploading ZIP file. Please wait...');
-        uploadZipFile(file);
-    }
-}
-
 
 // Event Listeners
-registerBtn.addEventListener('click', () => {
+registerBtn.addEventListener('click', (e) => {
+    e.preventDefault();
     const username = usernameInput.value.trim();
     const password = passwordInput.value;
     if (username && password) {
         if (currentUserId) {
-            appendLog('You are already logged in. Please log out to create a new account.', loginInterface);
+            showNotification('You are already logged in. Please log out to create a new account.', 'error');
         } else if (!checkPasswordStrength()) {
-            appendLog('Password must be at least 7 characters long.', loginInterface);
+            showNotification('Please choose a stronger password.', 'error');
         } else {
             loginInterface.classList.remove('hidden');
             loginInterface.innerHTML = '';
@@ -271,13 +223,12 @@ registerBtn.addEventListener('click', () => {
             socket.emit('register', { username, password, clientId: getClientId() });
         }
     } else {
-        loginInterface.classList.remove('hidden');
-        loginInterface.innerHTML = '';
-        appendLog('Please enter both username and password', loginInterface);
+        showNotification('Please enter both username and password', 'error');
     }
 });
 
-loginBtn.addEventListener('click', () => {
+loginBtn.addEventListener('click', (e) => {
+    e.preventDefault();
     const username = usernameInput.value;
     const password = passwordInput.value;
     if (username && password) {
@@ -286,9 +237,7 @@ loginBtn.addEventListener('click', () => {
         appendLog('Logging in...', loginInterface);
         socket.emit('login', { username, password, clientId: getClientId() });
     } else {
-        loginInterface.classList.remove('hidden');
-        loginInterface.innerHTML = '';
-        appendLog('Please enter both username and password', loginInterface);
+        showNotification('Please enter both username and password', 'error');
     }
 });
 
@@ -305,20 +254,7 @@ sendButton.addEventListener('click', () => {
         return;
     }
 
-    if (command === '2' && userStates[currentUserId]?.step === 'ask_method') {
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '.zip';
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                uploadZipFile(file);
-            }
-        };
-        fileInput.click();
-    } else {
-        socket.emit('command', { userId: currentUserId, message: command });
-    }
+    socket.emit('command', { userId: currentUserId, message: command });
 
     commandInput.value = '';
 });
@@ -379,22 +315,35 @@ executeActionBtn.addEventListener('click', () => {
     }
 });
 
-darkModeToggle.addEventListener('click', toggleDarkMode);
 
-cloneRepoBtn.addEventListener('click', handleCloneRepo);
-uploadZipBtn.addEventListener('click', () => zipFileInput.click());
-zipFileInput.addEventListener('change', handleZipUpload);
+// Forgot Password functionality
+document.getElementById('forgot-password-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    alert('Password reset functionality will be implemented soon.');
+});
 
-// Socket event listeners
+
+// Add a notification system
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.textContent = message;
+    notification.className = `fixed top-4 right-4 p-4 rounded shadow-lg ${type === 'error' ? 'bg-red-500' : 'bg-blue-500'} text-white`;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Update socket event listeners to use the new notification system
 socket.on('registerResponse', (response) => {
     if (response.success) {
-        currentUserId = response.userId;
-        localStorage.setItem('currentUserId', currentUserId);
-        localStorage.setItem('isAdmin', 'false');
-        appendLog(`Registered successfully. Your user BLUE ID is: ${currentUserId}`, loginInterface);
-        showAppSection();
+        showNotification(`Registered successfully. Your user ID is: ${response.userId}. Please log in.`, 'info');
+        // Clear the input fields after successful registration
+        usernameInput.value = '';
+        passwordInput.value = '';
+        passwordStrength.textContent = '';
     } else {
-        appendLog(`Registration failed: ${response.message}`, loginInterface);
+        showNotification(`Registration failed: ${response.message}`, 'error');
     }
 });
 
@@ -403,36 +352,25 @@ socket.on('loginResponse', (response) => {
         currentUserId = response.userId;
         isAdmin = response.isAdmin;
         
-        // Store users data in localStorage
         const users = JSON.parse(localStorage.getItem('users') || '{}');
         users[usernameInput.value] = { id: response.userId };
         localStorage.setItem('users', JSON.stringify(users));
         
         localStorage.setItem('currentUserId', currentUserId);
         localStorage.setItem('isAdmin', response.isAdmin);
-        appendLog(`Logged in successfully. Your user ID is: ${currentUserId}`, loginInterface);
+        showNotification(`Logged in successfully. Welcome back!`, 'info');
         showAppSection();
     } else {
-        appendLog(`Login failed: ${response.message}`, loginInterface);
+        showNotification(`Login failed: ${response.message}`, 'error');
     }
 });
 
+// Socket event listeners
 socket.on('message', (message) => {
     if (typeof message === 'object' && message.type === 'spaceUsage') {
         spaceUsage.textContent = `${message.usage}`;
     } else if (message !== "This is your ID") {
         appendLog(message);
-        
-        // Update user state based on server messages
-        if (message.includes('Please choose your deployment method:')) {
-            userStates[currentUserId] = { step: 'ask_method' };
-        } else if (message.includes('Please provide the Repository URL')) {
-            userStates[currentUserId] = { step: 'ask_repo' };
-        } else if (message.includes('Please upload your ZIP file')) {
-            userStates[currentUserId] = { step: 'ask_zip' };
-        } else if (message.includes('Which file would you like to run?')) {
-            userStates[currentUserId] = { step: 'ask_file' };
-        }
     }
     // Automatically scroll to the bottom of the log display
     logDisplay.scrollTop = logDisplay.scrollHeight;
@@ -481,11 +419,6 @@ socket.on('userStats', (stats) => {
     activeUsers.textContent = stats.active;
 });
 
-socket.on('uploadProgress', (progress) => {
-    console.log(`Upload progress: ${progress.toFixed(2)}%`);
-    // You can update a progress bar or display a message here
-});
-
 document.getElementById('logout-btn').addEventListener('click', logout);
 togglePasswordBtn.addEventListener('click', togglePasswordVisibility);
 passwordInput.addEventListener('input', checkPasswordStrength);
@@ -493,9 +426,7 @@ searchUsersInput.addEventListener('input', filterUsers);
 
 // Initialize
 checkExistingSession();
-if (localStorage.getItem('darkMode') === 'light') {
-    toggleDarkMode();
-}
+
 
 // Periodically update server runtime and system status
 setInterval(() => {
@@ -544,28 +475,24 @@ function toggleAudio() {
         isAudioPlaying = false;
         audioControl.textContent = 'Play Audio';
     } else {
-        backgroundAudio.play().catch(error => {
-            console.error('Audio playback failed:', error);
-        });
+        playAudio();
+    }
+}
+
+function playAudio() {
+    backgroundAudio.play().then(() => {
         isAudioPlaying = true;
         audioControl.textContent = 'Pause Audio';
-    }
+        console.log('Audio started playing');
+    }).catch(error => {
+        console.error('Audio playback failed:', error);
+        audioControl.textContent = 'Play Audio';
+    });
 }
 
 // Try to play audio on page load
 document.addEventListener('DOMContentLoaded', () => {
-    const playPromise = backgroundAudio.play();
-    
-    if (playPromise !== undefined) {
-        playPromise.then(() => {
-            isAudioPlaying = true;
-            audioControl.textContent = 'Pause Audio';
-            console.log('Audio started playing automatically');
-        }).catch(error => {
-            console.error('Autoplay was prevented:', error);
-            audioControl.textContent = 'Play Audio';
-        });
-    }
+    playAudio();
 });
 
 // Add event listener to audio control button
@@ -574,7 +501,7 @@ audioControl.addEventListener('click', toggleAudio);
 // Add event listener to document for user interaction
 document.addEventListener('click', () => {
     if (!isAudioPlaying) {
-        toggleAudio();
+        playAudio();
     }
 });
 
