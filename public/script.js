@@ -39,12 +39,14 @@ const fileEditor = document.getElementById('file-editor');
 const fileContent = document.getElementById('file-content');
 const currentFile = document.getElementById('current-file');
 const saveFileBtn = document.getElementById('save-file');
+const backBtn = document.getElementById('back-btn');
 
 let currentUserId = null;
 let isAdmin = false;
 let allUsers = [];
 let currentPage = 1;
 const usersPerPage = 10;
+let currentPath = '';
 
 function appendLog(message, target = logDisplay) {
     const logEntry = document.createElement('div');
@@ -78,7 +80,7 @@ function showAppSection() {
     setTimeout(() => {
         socket.emit('start', currentUserId);
         socket.emit('getServerRuntime');
-        socket.emit('getFileList', currentUserId);
+        socket.emit('listFiles', { userId: currentUserId, dirPath: '' });
     }, 500);
 
     // Update server status information
@@ -221,6 +223,18 @@ function showFileEditor(filePath, content) {
   fileEditor.classList.remove('hidden');
   currentFile.textContent = filePath;
   fileContent.value = content;
+}
+
+function updateFileExplorer(files) {
+  updateFileList(files);
+  backBtn.style.display = currentPath ? 'block' : 'none';
+}
+
+function goBack() {
+  if (currentPath) {
+    const parentPath = currentPath.split('/').slice(0, -1).join('/');
+    socket.emit('listFiles', { userId: currentUserId, dirPath: parentPath });
+  }
 }
 
 saveFileBtn.addEventListener('click', () => {
@@ -427,7 +441,8 @@ socket.on('serverRuntime', (runtime) => {
 });
 
 socket.on('fileList', (files) => {
-  updateFileList(files);
+  currentPath = files.length > 0 ? files[0].path.split('/').slice(0, -1).join('/') : '';
+  updateFileExplorer(files);
 });
 
 socket.on('fileContent', ({ filePath, content }) => {
@@ -436,6 +451,8 @@ socket.on('fileContent', ({ filePath, content }) => {
 
 socket.on('fileSaved', ({ filePath }) => {
   showNotification(`File ${filePath} saved successfully`, 'info');
+  // Refresh the current directory
+  socket.emit('listFiles', { userId: currentUserId, dirPath: currentPath });
 });
 
 socket.on('systemStatus', (status) => {
@@ -460,6 +477,7 @@ document.getElementById('logout-btn').addEventListener('click', logout);
 togglePasswordBtn.addEventListener('click', togglePasswordVisibility);
 passwordInput.addEventListener('input', checkPasswordStrength);
 searchUsersInput.addEventListener('input', filterUsers);
+backBtn.addEventListener('click', goBack);
 
 // Initialize
 checkExistingSession();
