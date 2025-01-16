@@ -35,6 +35,10 @@ const diskUsage = document.getElementById('disk-usage');
 const totalUsers = document.getElementById('total-users');
 const activeSessions = document.getElementById('active-sessions');
 const bannedUsers = document.getElementById('banned-users');
+const fileEditor = document.getElementById('file-editor');
+const fileContent = document.getElementById('file-content');
+const currentFile = document.getElementById('current-file');
+const saveFileBtn = document.getElementById('save-file');
 
 let currentUserId = null;
 let isAdmin = false;
@@ -81,6 +85,7 @@ function showAppSection() {
     socket.emit('getServerRuntime');
     socket.emit('getSystemStatus');
     socket.emit('getUserStats');
+    socket.emit('listFiles', { userId: currentUserId, dirPath: '' });
 }
 
 function logout() {
@@ -196,19 +201,33 @@ function setupPagination(users) {
 }
 
 function updateFileList(files) {
-    fileList.innerHTML = '';
-    files.forEach(file => {
-        const li = document.createElement('li');
-        li.textContent = file.name;
-        li.classList.add(file.type);
-        if (file.type === 'folder') {
-            li.addEventListener('click', () => {
-                socket.emit('getFileList', currentUserId, file.path);
-            });
-        }
-        fileList.appendChild(li);
+  fileList.innerHTML = '';
+  files.forEach(file => {
+    const li = document.createElement('li');
+    li.textContent = file.name;
+    li.classList.add(file.type);
+    li.addEventListener('click', () => {
+      if (file.type === 'folder') {
+        socket.emit('listFiles', { userId: currentUserId, dirPath: file.path });
+      } else {
+        socket.emit('readFile', { userId: currentUserId, filePath: file.path });
+      }
     });
+    fileList.appendChild(li);
+  });
 }
+
+function showFileEditor(filePath, content) {
+  fileEditor.classList.remove('hidden');
+  currentFile.textContent = filePath;
+  fileContent.value = content;
+}
+
+saveFileBtn.addEventListener('click', () => {
+  const filePath = currentFile.textContent;
+  const content = fileContent.value;
+  socket.emit('writeFile', { userId: currentUserId, filePath, content });
+});
 
 
 // Event Listeners
@@ -408,7 +427,15 @@ socket.on('serverRuntime', (runtime) => {
 });
 
 socket.on('fileList', (files) => {
-    updateFileList(files);
+  updateFileList(files);
+});
+
+socket.on('fileContent', ({ filePath, content }) => {
+  showFileEditor(filePath, content);
+});
+
+socket.on('fileSaved', ({ filePath }) => {
+  showNotification(`File ${filePath} saved successfully`, 'info');
 });
 
 socket.on('systemStatus', (status) => {
@@ -422,6 +449,11 @@ socket.on('userStats', (stats) => {
     activeSessions.innerHTML = `Active Sessions: <span class="font-bold">${stats.active}</span>`;
     bannedUsers.innerHTML = `Banned Users: <span class="font-bold">${stats.banned}</span>`;
     activeUsers.textContent = stats.active;
+});
+
+socket.on('start', (userId) => {
+  // ... existing code ...
+  socket.emit('listFiles', { userId: currentUserId, dirPath: '' });
 });
 
 document.getElementById('logout-btn').addEventListener('click', logout);

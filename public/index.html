@@ -83,9 +83,17 @@
     </div>
     <div>
       <div id="file-explorer" class="bg-gray-800 border border-gray-700 rounded-lg p-4 h-96 overflow-y-auto mb-4">
-        <h3 class="text-xl font-bold mb-2 text-blue-400">File Explorer</h3>
-        <ul id="file-list" class="space-y-2"></ul>
-      </div>
+    <h3 class="text-xl font-bold mb-2 text-blue-400">File Explorer</h3>
+    <ul id="file-list" class="space-y-2"></ul>
+  </div>
+  <div id="file-editor" class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-4 hidden">
+    <h3 class="text-xl font-bold mb-2 text-blue-400">File Editor</h3>
+    <div class="flex justify-between items-center mb-2">
+      <span id="current-file" class="text-sm text-gray-400"></span>
+      <button id="save-file" class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">Save</button>
+    </div>
+    <textarea id="file-content" class="w-full h-64 bg-gray-700 text-white p-2 rounded" spellcheck="false"></textarea>
+  </div>
     </div>
   </div>
   <button id="logout-btn" class="w-full p-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50">Logout🤡</button>

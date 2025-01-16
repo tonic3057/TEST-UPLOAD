@@ -332,3 +332,37 @@ button.bg-purple-600:active {
   box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+#file-explorer, #file-editor {
+  background-color: rgba(45, 55, 72, 0.8);
+  backdrop-filter: blur(5px);
+}
+
+#file-list li {
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+#file-list li:hover {
+  background-color: rgba(66, 153, 225, 0.2);
+}
+
+#file-content {
+  font-family: 'Courier New', monospace;
+  resize: vertical;
+}
+
+#save-file {
+  transition: all 0.3s ease;
+}
+
+#save-file:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+#save-file:active {
+  transform: translateY(1px);
+}
+
