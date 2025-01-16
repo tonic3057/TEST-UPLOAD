@@ -76,6 +76,11 @@ function showAppSection() {
         socket.emit('getServerRuntime');
         socket.emit('getFileList', currentUserId);
     }, 500);
+
+    // Update server status information
+    socket.emit('getServerRuntime');
+    socket.emit('getSystemStatus');
+    socket.emit('getUserStats');
 }
 
 function logout() {
@@ -430,11 +435,9 @@ checkExistingSession();
 
 // Periodically update server runtime and system status
 setInterval(() => {
-    socket.emit('getServerRuntime');
-    if (isAdmin) {
-        socket.emit('getSystemStatus');
-        socket.emit('getUserStats');
-    }
+  socket.emit('getServerRuntime');
+  socket.emit('getSystemStatus');
+  socket.emit('getUserStats');
 }, 5000);
 
 function fetchRandomQuote() {
