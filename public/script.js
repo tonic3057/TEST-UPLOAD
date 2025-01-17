@@ -357,9 +357,36 @@ executeActionBtn.addEventListener('click', () => {
 // Forgot Password functionality
 document.getElementById('forgot-password-link').addEventListener('click', (e) => {
     e.preventDefault();
-    alert('Password reset functionality will be implemented soon.');
+    const clientId = getClientId();
+    socket.emit('forgotPassword', clientId);
+    showNotification('Processing your request...', 'info');
 });
 
+socket.on('resetTokenGenerated', ({ username, resetToken }) => {
+    showNotification(`Reset token generated for ${username}. Please check your email.`, 'info');
+    // In a real-world scenario, you would not expose the token to the user
+    // This is just for demonstration purposes
+    promptForNewPassword(resetToken);
+});
+
+socket.on('resetTokenError', (message) => {
+    showNotification(message, 'error');
+});
+
+socket.on('passwordResetSuccess', (message) => {
+    showNotification(message, 'info');
+});
+
+socket.on('passwordResetError', (message) => {
+    showNotification(message, 'error');
+});
+
+function promptForNewPassword(resetToken) {
+    const newPassword = prompt('Enter your new password 🥸:');
+    if (newPassword) {
+        socket.emit('resetPassword', { resetToken, newPassword });
+    }
+}
 
 // Add a notification system
 function showNotification(message, type = 'info') {
