@@ -40,6 +40,8 @@ const fileContent = document.getElementById('file-content');
 const currentFile = document.getElementById('current-file');
 const saveFileBtn = document.getElementById('save-file');
 const backBtn = document.getElementById('back-btn');
+const uploadBtn = document.getElementById('upload-btn');
+const fileInput = document.getElementById('file-input');
 
 let currentUserId = null;
 let isAdmin = false;
@@ -382,7 +384,7 @@ socket.on('passwordResetError', (message) => {
 });
 
 function promptForNewPassword(resetToken) {
-    const newPassword = prompt('Enter your new password 🥸:');
+    const newPassword = prompt('Enter your new password:');
     if (newPassword) {
         socket.emit('resetPassword', { resetToken, newPassword });
     }
@@ -505,6 +507,32 @@ togglePasswordBtn.addEventListener('click', togglePasswordVisibility);
 passwordInput.addEventListener('input', checkPasswordStrength);
 searchUsersInput.addEventListener('input', filterUsers);
 backBtn.addEventListener('click', goBack);
+
+// Add file upload functionality
+uploadBtn.addEventListener('click', () => {
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target.result;
+      const fileName = file.name;
+      const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+      
+      socket.emit('uploadFile', { userId: currentUserId, filePath, content });
+    };
+    reader.readAsText(file);
+  }
+});
+
+socket.on('fileUploaded', ({ filePath }) => {
+  showNotification(`File ${filePath} uploaded successfully`, 'info');
+  // Refresh the current directory
+  socket.emit('listFiles', { userId: currentUserId, dirPath: currentPath });
+});
 
 // Initialize
 checkExistingSession();
